@@ -1,0 +1,16 @@
+#!/bin/bash
+
+name=$1
+shift
+
+if [ -z "$name" ]; then
+  tmux list-session
+  exit
+fi
+
+# $name is a valid directory, go to it and start screen
+if [ -d "$name" ]; then
+  cd $name
+  name=`basename $PWD`
+fi
+tmux attach-session -t $name || tmux new-session -s $name "$@"
