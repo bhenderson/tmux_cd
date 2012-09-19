@@ -17,8 +17,9 @@ exact_match() {
   list short --quiet -x && attach
 }
 
+# no match, create new
 # one match, use it
-# two matches, error out
+# two matches, show options
 close_match() {
   matches=( $(list short) )
 
