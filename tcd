@@ -5,17 +5,22 @@ attach() {
 }
 
 list() {
-  tmux list-session ${1:+"-F#{session_name}"}
+  if [[ "$1" == 'short' ]]; then
+    local args='-F #{session_name}'
+    shift
+  fi
+
+  tmux list-session $args | grep "$@" "${name:-$}"
 }
 
 exact_match() {
-  list short | grep --quiet -x $name && attach
+  list short --quiet -x && attach
 }
 
 # one match, use it
 # two matches, error out
 close_match() {
-  matches=($(list short | grep $name))
+  matches=( $(list short) )
 
   case ${#matches[*]} in
     0) # no match
@@ -26,8 +31,7 @@ close_match() {
       ;;
     *)
       # disambiguate
-      list | grep $name
-      exit
+      list
       ;;
   esac
 }
