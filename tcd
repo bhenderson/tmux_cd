@@ -1,24 +1,32 @@
 #!/bin/bash
 
+attach() {
+  tmux attach-session -t ${1:-$name}
+}
+
+list() {
+  tmux list-session ${1:+"-F#{session_name}"}
+}
+
 exact_match() {
-  tmux list-session -F "#{session_name}" | grep --quiet -x $name && tmux attach-session -t $name
+  list short | grep --quiet -x $name && attach
 }
 
 # one match, use it
 # two matches, error out
 close_match() {
-  matches=($(tmux list-session -F "#{session_name}" | grep $name))
+  matches=($(list short | grep $name))
 
   case ${#matches[*]} in
     0) # no match
       return
       ;;
     1) # closest match
-      tmux attach-session -t $matches
+      attach $matches
       ;;
     *)
       # disambiguate
-      tmux list-session | grep $name
+      list | grep $name
       exit
       ;;
   esac
@@ -32,7 +40,7 @@ name=$1
 shift
 
 if [ -z "$name" ]; then
-  tmux list-session
+  list
   exit
 fi
 
