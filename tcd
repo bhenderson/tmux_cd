@@ -1,73 +1,7 @@
 #!/bin/bash
 
-name=$1
-shift
-
-if [ -z "$name" ]; then
-  tmux list-session
-  exit
-fi
-
-# $name is a valid directory, go to it and start screen
-if [ -d "$name" ]; then
-  cd $name
-  exact_match=true
-  name=`basename $PWD`
-fi
-
-##
-# $ tmux ls
-# foo2
-# foo1
-# foo
-# bar
-#
-# $ tcd foo => exact match, switch to it
-# $ tcd fo  => disambiguate
-# $ tcd baz => no match, new
-# $ tcd ar  => only one mach, switch to it
-
-# set session name to exact match if matching more than two, otherwise, closest match
-# set session_name to exact match if only one
-# set session_name to closest match if only one
-# start new session
-
-
-set_session_name() {
-  names=($(tmux list-session -F "#{session_name}" | grep $name))
-  case ${#names[*]} in
-    0)
-      # no match
-      tmux new-session -s $name
-      ;;
-    1)
-      # closest match
-      tmux attach-session -t $names
-      ;;
-    2)
-      # disambiguate
-      tmux list-session
-      ;;
-  esac
-}
-
-# if switching to directory, force exact match
-attach() {
-  exact_match && disambiguate >/dev/null && return 1
-  tmux attach-session -t $name
-}
-
-disambiguate() {
-  tmux list-session | grep "$@" $name
-}
-
-new() {
-  exact_match || disambiguate && return 1
-  tmux new-session -s $name "$@"
-}
-
 exact_match() {
-  tmux list-session | grep --quiet "$name:" && tmux attach-session -t $name
+  tmux list-session -F "#{session_name}" | grep --quiet -x $name && tmux attach-session -t $name
 }
 
 # one match, use it
@@ -77,20 +11,35 @@ close_match() {
 
   case ${#matches[*]} in
     0) # no match
-      tmux new-session -s $name "$@"
+      return
       ;;
     1) # closest match
       tmux attach-session -t $matches
       ;;
     *)
       # disambiguate
-      tmux list-session
+      tmux list-session | grep $name
+      exit
       ;;
   esac
 }
 
-# if zero matches, attach will fail, and grep will fail, and new will run
-# if one match, attach will succeed
-# if two matches, attach will fail, and grep will succeed, and new will NOT run.
-#attach || new "$@"
-exact_match || close_match "$@"
+new() {
+  tmux new-session -s $name "$@"
+}
+
+name=$1
+shift
+
+if [ -z "$name" ]; then
+  tmux list-session
+  exit
+fi
+
+# $name is a valid directory, go to it and start tmux
+if [ -d "$name" ]; then
+  cd $name
+  name=`basename $PWD`
+fi
+
+exact_match || close_match || new "$@"
