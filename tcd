@@ -21,6 +21,9 @@ exact_match() {
 # one match, use it
 # two matches, show options
 close_match() {
+  # if exact_match is not empty, return 1
+  test -z "$exact_match" || return
+
   matches=( $(list short) )
 
   case ${#matches[*]} in
@@ -52,6 +55,8 @@ fi
 # $name is a valid directory, go to it and start tmux
 if [ -d "$name" ]; then
   cd $name
+  # force exact match
+  exact_match='true'
   name=`basename $PWD`
 fi
 
