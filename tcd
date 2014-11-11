@@ -41,7 +41,15 @@ close_match() {
 }
 
 new() {
-  tmux new-session -s $name "$@"
+  # create new windows for each argument
+  tmux new-session -d -s $name "$1"
+  shift; let i=1
+  for arg; do
+    tmux new-window -t $name:$i "$arg"
+    let i++
+  done
+  tmux select-window -t $name:0
+  tmux attach-session -t $name
 }
 
 name=$1
