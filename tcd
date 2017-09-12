@@ -40,9 +40,14 @@ close_match() {
   esac
 }
 
+_new() {
+  [[ -z "$1" ]] && shift
+  tmux new-session -d -s $name "$@"
+}
+
 new() {
   # create new windows for each argument
-  tmux new-session -d -s $name "$1"
+  _new "$1"
   shift; let i=1
   for arg; do
     tmux new-window -t $name:$i "$arg"
