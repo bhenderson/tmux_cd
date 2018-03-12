@@ -1,76 +1,17 @@
 #!/bin/bash
 
-attach() {
-  tmux attach-session -t ${1:-$name}
-}
+set -euo pipefail
 
-list() {
-  if [[ "$1" == 'short' ]]; then
-    local args='-F #{session_name}'
-    shift
-  fi
-
-  tmux list-session $args | grep "$@" "${name:-$}"
-}
-
-exact_match() {
-  list short --quiet -x && attach
-}
-
-# no match, create new
-# one match, use it
-# two matches, show options
-close_match() {
-  # if exact_match is not empty, return 1
-  test -z "$exact_match" || return
-
-  matches=( $(list short) )
-
-  case ${#matches[*]} in
-    0) # no match
-      return
-      ;;
-    1) # closest match
-      attach $matches
-      ;;
-    *)
-      # disambiguate
-      list
-      ;;
-  esac
-}
-
-_new() {
-  [[ -z "$1" ]] && shift
-  tmux new-session -d -s $name "$@"
-}
-
-new() {
-  # create new windows for each argument
-  _new "$1"
-  shift; let i=1
-  for arg; do
-    tmux new-window -t $name:$i "$arg"
-    let i++
-  done
-  tmux select-window -t $name:0
-  tmux attach-session -t $name
-}
-
-name=$1
-shift
+name=${1-}
 
 if [ -z "$name" ]; then
-  list
-  exit
+	tmux list-sessions
+	exit 0
 fi
 
-# $name is a valid directory, go to it and start tmux
 if [ -d "$name" ]; then
-  cd $name
-  # force exact match
-  exact_match='true'
-  name=`basename $PWD`
+	tmux new-session -A -c "$name" -s "$(basename "$name")"
+	exit 0
 fi
 
-exact_match || close_match || new "$@"
+tmux attach-session -t "$name"
