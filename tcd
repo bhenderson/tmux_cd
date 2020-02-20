@@ -2,16 +2,23 @@
 
 set -euo pipefail
 
-name=${1-}
+DIR=${1-}
 
-if [ -z "$name" ]; then
-	tmux list-sessions
-	exit 0
+if [ -z "$DIR" ]; then
+	exec tmux list-sessions
 fi
 
-if [ -d "$name" ]; then
-	tmux new-session -A -c "$name" -s "$(basename "$name")"
-	exit 0
+if [ -d "$DIR" ]; then
+	DIR=$(cd $DIR; pwd)
+	NAME=$(basename "$DIR")
+else
+	NAME=$DIR
 fi
 
-tmux attach-session -t "$name"
+NAME=$(tr -- '-.' _ <<< "$NAME")
+
+if [ -d "$DIR" ]; then
+	exec tmux new-session -A -c "$DIR" -s "$NAME"
+fi
+
+tmux attach-session -t "$NAME"
